@@ -1,34 +1,34 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
-const genAI = new GoogleGenerativeAI(API_KEY);
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'YOUR_API_KEY_HERE'
+const genAI = new GoogleGenerativeAI(API_KEY)
 
 /**
  * Universal Intent Translator (UIT) - Gemini 2.0 Integration
  * Featuring Automatic Regional Model Fallbacks for 100% Uptime
  */
 export const processIntent = async (input, images = [], location = null) => {
-  // Cascading array of models to bypass specific 429 Quota limits 
+  // Cascading array of models to bypass specific 429 Quota limits
   // ONLY USING 2.x MODELS: The user's specific API Authorization blocks all 1.x requests.
   const fallbackModels = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-2.5-pro",
-    "gemini-2.0-flash-001"
-  ];
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.5-pro',
+    'gemini-2.0-flash-001',
+  ]
 
-  let rateLimitError = null;
-  let lastError;
+  let rateLimitError = null
+  let lastError
 
   for (const modelName of fallbackModels) {
     try {
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = genAI.getGenerativeModel({ model: modelName })
       const prompt = `
         You are an AI-powered Universal Intent Translator designed for the PromptWars challenge.
         Your goal is to parse messy inputs into clean, actionable, formatted data to bridge the gap between human emergencies and system responses.
         
         INPUT: "${input}"
-        CONTEXT: ${location ? `GPS Location Coordinates: ${location}` : "Unknown Location"}
+        CONTEXT: ${location ? `GPS Location Coordinates: ${location}` : 'Unknown Location'}
         
         FOLLOW THE 7-STEP PROCESS (Intent, Domain, JSON Data, Risk Level, 3+ Actions, Tone, Format).
         
@@ -45,29 +45,28 @@ export const processIntent = async (input, images = [], location = null) => {
           <li>[Action 3]</li>
         </ul>
         <p><b>🧠 Additional Insights:</b> [Any tone analysis, domain-specific insights, or safety warnings]</p>
-      `;
+      `
 
-      const parts = [{ text: prompt }];
+      const parts = [{ text: prompt }]
       for (const img of images) {
-        parts.push({ inlineData: { data: img.split(',')[1], mimeType: "image/jpeg" } });
+        parts.push({ inlineData: { data: img.split(',')[1], mimeType: 'image/jpeg' } })
       }
 
-      const result = await model.generateContent(parts);
-      const response = await result.response;
-      return response.text();
-      
+      const result = await model.generateContent(parts)
+      const response = await result.response
+      return response.text()
     } catch (error) {
-      console.warn(`Fallback triggered: ${modelName} failed.`, error.message.substring(0, 100));
-      
+      console.warn(`Fallback triggered: ${modelName} failed.`, error.message.substring(0, 100))
+
       // Specifically capture 429 Rate Limits so they aren't masked by subsequent 404s
       if (error.message.includes('429') && !rateLimitError) {
-        rateLimitError = error;
+        rateLimitError = error
       }
-      lastError = error;
+      lastError = error
     }
   }
 
   // If ALL models fail, throw the rate limit explicitly (if it was hit at all) for the UI Handler
-  console.error("All Gemini AI Fallback paths exhausted:", lastError);
-  throw rateLimitError || lastError;
-};
+  console.error('All Gemini AI Fallback paths exhausted:', lastError)
+  throw rateLimitError || lastError
+}
