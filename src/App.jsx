@@ -130,7 +130,8 @@ const App = () => {
 
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
-      setError("AI Service Timeout. Please check your connection.");
+      console.error(err);
+      setError(`AI Engine Error: ${err.message || "Connection interrupted. Please try again."}`);
     } finally {
       setIsProcessing(false);
     }
@@ -200,9 +201,9 @@ const App = () => {
           </motion.p>
         </section>
 
-        <section className={`glass-panel p-8 mb-8 transition-all duration-500 ${riskLevel === 'critical' ? 'critical-pulse' : ''}`}>
+        <section className={`glass-panel p-8 mb-8 transition-all duration-500 ${riskLevel === 'critical' ? 'critical-pulse' : ''} relative`}>
           <form onSubmit={handleSubmit}>
-            <div className="relative mb-6 group">
+            <div className="relative mb-6">
               <label htmlFor="intent-input" className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                 1. Describe the Situation 
                 <span className="group relative cursor-pointer text-blue-500">
@@ -210,15 +211,28 @@ const App = () => {
                   <span className="tooltip-text font-normal">Type via keyboard or click the microphone to dictate hands-free. Attach photos of prescriptions or scenes!</span>
                 </span>
               </label>
-              <textarea 
-                id="intent-input"
-                name="intent-input"
-                value={input}
-                onChange={(e) => setInput(DOMPurify.sanitize(e.target.value))}
-                placeholder="E.g., 45yo male, severe chest pain radiating to left arm, history of hypertension..."
-                className="input-light w-full h-40 rounded-2xl p-6 text-lg transition-all resize-none shadow-sm"
-              />
-              <div className="absolute bottom-6 right-6 flex items-center gap-3">
+              
+              <div className="relative">
+                <textarea 
+                  id="intent-input"
+                  name="intent-input"
+                  value={input}
+                  onChange={(e) => setInput(DOMPurify.sanitize(e.target.value))}
+                  placeholder="E.g., 45yo male, severe chest pain radiating to left arm, history of hypertension..."
+                  className="input-light w-full h-40 rounded-2xl p-6 text-lg transition-all resize-none shadow-sm"
+                  disabled={isProcessing}
+                />
+                
+                {/* Instant WOW Factor: Scanning Overlay during AI Processing */}
+                {isProcessing && (
+                  <div className="absolute inset-0 bg-white-80 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center z-10 border-2 border-blue-400">
+                    <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+                    <h3 className="text-xl font-extrabold text-blue-600 tracking-widest uppercase">Synthesizing Intelligence</h3>
+                    <p className="text-sm font-bold mt-2 text-slate-500 animate-pulse">Running Multimodal Medical AI Models...</p>
+                  </div>
+                )}
+                
+                <div className="absolute bottom-6 right-6 flex items-center gap-3">
                 <div className="group relative">
                   <button type="button" onClick={startSpeech} className={`p-3 w-12 h-12 flex justify-center items-center rounded-full transition-all shadow-md ${isListening ? 'bg-red-500 text-white animate-pulse shadow-xl' : 'bg-white border border-slate-200 text-slate-700 hover-scale-105'}`}>
                      {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -233,6 +247,7 @@ const App = () => {
                 </div>
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} multiple className="hidden" accept="image/*" />
               </div>
+            </div>
             </div>
 
             {images.length > 0 && (
@@ -249,27 +264,34 @@ const App = () => {
               </div>
             )}
 
-            <div className="flex flex-col md:flex-row gap-6 items-center justify-between pt-4 border-t border-slate-200">
-              <div className="flex items-center gap-4 w-full md:w-auto">
-                <div className="group relative">
-                  <button type="button" onClick={handleLocationDetect} disabled={isLocating} className={`flex items-center gap-2 px-6 py-3 rounded-xl border shadow-sm transition-all font-semibold ${location ? 'bg-teal-50 border-teal-200 text-teal-700' : 'bg-white border-slate-200 text-slate-700 hover-scale-102'}`}>
-                    <MapPin className={`w-5 h-5 ${isLocating ? 'animate-pulse text-blue-500' : location ? 'text-teal-600' : 'text-slate-400'}`} />
-                    {location ? 'Signal Locked' : 'Acquire GPS Position'}
+            <div className="flex flex-col md:flex-row gap-6 items-center justify-between pt-4 border-t border-slate-200 mt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="group relative w-full sm:w-auto">
+                  <button type="button" onClick={handleLocationDetect} disabled={isLocating} className={`flex items-center justify-center w-full gap-2 px-6 py-3 rounded-xl border shadow-sm transition-all font-semibold ${location && location.toString().includes('Lat') ? 'bg-teal-50 border-teal-200 text-teal-700' : 'bg-white border-slate-200 text-slate-700 hover-scale-102'}`}>
+                    <MapPin className={`w-5 h-5 ${isLocating ? 'animate-pulse text-blue-500' : location && location.toString().includes('Lat') ? 'text-teal-600' : 'text-slate-400'}`} />
+                    {location && location.toString().includes('Lat') ? 'Signal Locked' : 'Auto GPS'}
                   </button>
-                  <span className="tooltip-text">Embed exact geographical coordinates into the alert</span>
+                  <span className="tooltip-text">Detect exact geographical coordinates via browser</span>
                 </div>
-                {location && (
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-teal-700 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Automated Localisation Active</span>
-                    <a href={`https://www.google.com/maps/search/?api=1&query=${location}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 font-bold uppercase transition-all mt-1 hover:underline">Verify Map Routing →</a>
-                  </div>
-                )}
+                
+                <div className="w-full sm:w-64 relative">
+                  <input 
+                    value={location || ''} 
+                    onChange={(e) => setLocation(e.target.value)} 
+                    placeholder="Or type location manually..." 
+                    className="input-light w-full rounded-xl px-4 py-3 text-sm focus-outline-none shadow-sm"
+                  />
+                  {location && location.toString().includes('Lat') && (
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`} target="_blank" rel="noopener noreferrer" className="absolute -bottom-5 left-2 text-[10px] text-blue-600 font-bold uppercase transition-all hover-underline">Verify Map Routing →</a>
+                  )}
+                </div>
               </div>
-              <button type="submit" disabled={isProcessing} className="w-full md:w-auto px-10 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-extrabold flex items-center justify-center gap-3 shadow-xl shadow-blue-500-20 hover-scale-105 active-scale-95 transition-all disabled:opacity-50 tracking-wide text-lg border border-white-50">
-                {isProcessing ? <><Loader2 className="w-6 h-6 animate-spin" /> SYNTHESIZING DATA...</> : <>GENERATE INTELLIGENCE <Send className="w-5 h-5" /></>}
+
+              <button type="submit" disabled={isProcessing} className="w-full md:w-auto px-10 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-extrabold flex items-center justify-center gap-3 shadow-xl shadow-blue-500-20 hover-scale-105 active-scale-95 transition-all disabled:opacity-50 tracking-wide text-lg border border-white-50 mt-4 md:mt-0 cursor-pointer">
+                {isProcessing ? <><Loader2 className="w-6 h-6 animate-spin" /> SYNTHESIZING...</> : <>GENERATE INTELLIGENCE <Send className="w-5 h-5" /></>}
               </button>
             </div>
-            {error && <p className="mt-4 text-red-600 font-bold bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm flex items-center gap-2"><AlertCircle className="w-5 h-5" /> {error}</p>}
+            {error && <p className="mt-4 text-red-600 font-bold bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm flex items-start gap-2"><AlertCircle className="w-5 h-5 shrink-0" /> {error}</p>}
           </form>
         </section>
 

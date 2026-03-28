@@ -16,7 +16,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
  */
 export const processIntent = async (input, images = [], location = null) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `
       You are an AI-powered Universal Intent Translator designed for the PromptWars challenge.
       Your goal is to parse messy inputs into clean, actionable, formatted data to bridge the gap between human emergencies and system responses.
