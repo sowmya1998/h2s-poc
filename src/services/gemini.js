@@ -8,14 +8,16 @@ const genAI = new GoogleGenerativeAI(API_KEY);
  * Featuring Automatic Regional Model Fallbacks for 100% Uptime
  */
 export const processIntent = async (input, images = [], location = null) => {
-  // Cascading array of models to bypass 429 Limit-0 Region errors
+  // Cascading array of models to bypass specific 429 Quota limits 
+  // ONLY USING 2.x MODELS: The user's specific API Authorization blocks all 1.x requests.
   const fallbackModels = [
+    "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-pro",
-    "gemini-1.5-flash-latest",
-    "gemini-pro"
+    "gemini-2.5-pro",
+    "gemini-2.0-flash-001"
   ];
 
+  let rateLimitError = null;
   let lastError;
 
   for (const modelName of fallbackModels) {
@@ -56,12 +58,16 @@ export const processIntent = async (input, images = [], location = null) => {
       
     } catch (error) {
       console.warn(`Fallback triggered: ${modelName} failed.`, error.message.substring(0, 100));
+      
+      // Specifically capture 429 Rate Limits so they aren't masked by subsequent 404s
+      if (error.message.includes('429') && !rateLimitError) {
+        rateLimitError = error;
+      }
       lastError = error;
-      // If it's not a generic 404 block, but an actual terminal failure, let it continue down the cascade.
     }
   }
 
-  // If ALL models fail, throw the final error to the UI
+  // If ALL models fail, throw the rate limit explicitly (if it was hit at all) for the UI Handler
   console.error("All Gemini AI Fallback paths exhausted:", lastError);
-  throw lastError;
+  throw rateLimitError || lastError;
 };
