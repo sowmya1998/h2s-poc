@@ -14,10 +14,27 @@
 
 <br />
 
-## 🎯 The Vision
-In critical situations—like medical emergencies, disaster reports, or complex municipal breakdowns—human input is often chaotic, heavily abbreviated, or strictly visual. 
+## 🎯 Chosen Vertical
+Disaster Response & Critical Care (Hackathon Vertical). Omnistream AI specifically addresses the chaotic, unstructured nature of emergency coordination where disjointed human data (frantic speech, photos, messy text) must be synthesized instantaneously.
 
-**Omnistream AI** is an intelligent orchestration layer. Utilizing the latest **Google Gemini 2.x Vision** models, the application intercepts messy multimodal data, automatically maps global GPS coordinates, dictates frantic speech, and synthesizes it all into a rigid 7-Step JSON Triage payload.
+## 🧠 Approach and Logic
+Our core logic bridges the gap between distressed citizens and structured response engines:
+1. **Multimodal Ingestion:** Accept input universally via typed text, Web Speech dictation, or raw image attachments.
+2. **Geospatial Translation:** Extracting precise latitude/longitude from the browser to synthesize physical incident routing.
+3. **Structured AI Distillation:** Pushing this aggregate mess through an intelligent "7-Step Protocol" via Gemini 2.x, mathematically grading risk levels and prioritizing an explicit JSON payload.
+
+## ⚙️ How the Solution Works
+1. A user rapidly records a voice note and attaches a photo of an injury or scene.
+2. The browser grabs their exact GPS coordinates asynchronously.
+3. The Vite frontend packages this data (Base64 + Text) and sends it securely to a resilient **Model Cascading Backend**. 
+4. The system validates the risk level, sanitizes the JSON response using `DOMPurify`, and natively renders a pulsing **Structured Operation Output** right on the screen.
+
+## 🤔 Assumptions Made
+* **Bandwidth Feasibility:** We assume First Responders possess 3G/4G connectivity to transmit the initial API payload.
+* **Environment Viability:** We assume voice dictation is viable (ambient noise doesn't entirely distort the Web Speech API threshold).
+* **AI Determinism:** We assume Gemini 2.x consistently returns correct JSON/HTML string layouts as instructed (hardened via explicit `systemInstruction`-style prompting rules).
+
+---
 
 ## ✨ Elite Features & Architecture
 
