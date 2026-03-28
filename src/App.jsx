@@ -131,7 +131,11 @@ const App = () => {
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
       console.error(err);
-      setError(`AI Engine Error: ${err.message || "Connection interrupted. Please try again."}`);
+      if (err.message && err.message.includes('429')) {
+        setError("AI Rate Limit Exceeded ⏳: You have requested too many translations per minute on the Google Free Tier. Please wait exactly 60 seconds and click Generate again!");
+      } else {
+        setError(`AI Engine Error: ${err.message || "Connection interrupted. Please try again."}`);
+      }
     } finally {
       setIsProcessing(false);
     }
