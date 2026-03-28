@@ -1,0 +1,4 @@
+# Omnistream AI - Production Robots Policy
+User-agent: *
+Allow: /
+Sitemap: https://sowmya1998.github.io/h2s-poc/sitemap.xml

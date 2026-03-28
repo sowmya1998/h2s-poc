@@ -22,29 +22,41 @@ export const processIntent = async (input, images = [], location = null) => {
 
   for (const modelName of fallbackModels) {
     try {
-      const model = genAI.getGenerativeModel({ model: modelName })
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        systemInstruction: {
+          parts: [{ text: `
+            You are the core of Omnistream AI, a high-performance triage engine. 
+            Your mission is to parse messy inputs into structured, life-saving operational data. 
+            Always return a valid JSON object according to the schema provided.
+            Analyze for medical priority, location, and recommended first-responder actions.
+          `}]
+        },
+        generationConfig: {
+          response_mime_type: "application/json",
+          temperature: 0.1, // High determinism for emergency triage
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+        ]
+      })
       const prompt = `
-        You are an AI-powered Universal Intent Translator designed for the PromptWars challenge.
-        Your goal is to parse messy inputs into clean, actionable, formatted data to bridge the gap between human emergencies and system responses.
-        
+        Translate this input into JSON. 
         INPUT: "${input}"
-        CONTEXT: ${location ? `GPS Location Coordinates: ${location}` : 'Unknown Location'}
+        LOCATION: ${location || 'Unknown'}
         
-        FOLLOW THE 7-STEP PROCESS (Intent, Domain, JSON Data, Risk Level, 3+ Actions, Tone, Format).
-        
-        You MUST format your response using standard, clean HTML tags (like <b>, <ul>, <li>, <p>, <br>) so it renders beautifully in a web UI. Do NOT use markdown.
-        Format EXACTLY as follows:
-        
-        <p><b>🔍 Interpreted Intent:</b> [Summary of what the human actually needs]</p>
-        <p><b>📊 Structured Data:</b> <code>[Extract key entities into a valid, single-line JSON string]</code></p>
-        <p><b>⚠️ Risk Level:</b> [LOW / MEDIUM / HIGH / CRITICAL] - [Brief Reason]</p>
-        <p><b>✅ Recommended Actions:</b></p>
-        <ul>
-          <li>[Action 1]</li>
-          <li>[Action 2]</li>
-          <li>[Action 3]</li>
-        </ul>
-        <p><b>🧠 Additional Insights:</b> [Any tone analysis, domain-specific insights, or safety warnings]</p>
+        JSON SCHEMA:
+        {
+          "intent": "string",
+          "entities": ["string"],
+          "risk": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+          "reasoning": "string",
+          "actions": ["string"],
+          "html_formatted": "string"
+        }
       `
 
       const parts = [{ text: prompt }]
@@ -54,7 +66,13 @@ export const processIntent = async (input, images = [], location = null) => {
 
       const result = await model.generateContent(parts)
       const response = await result.response
-      return response.text()
+      const text = response.text()
+      try {
+        return JSON.parse(text)
+      } catch (e) {
+        console.error("Failed to parse AI JSON", text)
+        return { html_formatted: text, risk: 'UNKNOWN' }
+      }
     } catch (error) {
       console.warn(`Fallback triggered: ${modelName} failed.`, error.message.substring(0, 100))
 
