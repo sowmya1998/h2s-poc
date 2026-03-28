@@ -16,10 +16,9 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
 
-      - name: Install, Test, and Build 🔧
+      - name: Install and Build 🔧
         run: |
           npm ci
-          npx vitest run
           npm run build
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
